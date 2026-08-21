@@ -147,6 +147,17 @@ class GroupService {
     return group;
   }
 
+  // ログイン中ユーザーを指定グループから脱退させる。
+  // group_id と user_id の両方で絞り、他メンバーの参加情報には触れない。
+  Future<void> leaveGroup(String groupId) async {
+    final userId = _currentUserId;
+    await supabase
+        .from('group_members')
+        .delete()
+        .eq('group_id', groupId)
+        .eq('user_id', userId);
+  }
+
   Future<Group> fetchGroup(String groupId) async {
     final json =
         await supabase.from('groups').select().eq('id', groupId).maybeSingle();

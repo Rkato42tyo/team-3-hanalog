@@ -4,6 +4,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../core/analytics.dart';
@@ -11,6 +12,7 @@ import '../../core/cached_video.dart';
 import '../../core/jst.dart';
 import '../../models/app_user.dart';
 import '../../models/group.dart';
+import '../home/home_provider.dart';
 import '../post/recorded_video_view.dart';
 import 'group_provider.dart';
 
@@ -42,6 +44,7 @@ class GroupDetailScreen extends ConsumerStatefulWidget {
 class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
   late DateTime _date;
   late int _hour;
+  bool _isLeaving = false;
 
   @override
   void initState() {
@@ -89,6 +92,52 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
     return _hour < 23;
   }
 
+  Future<void> _confirmAndLeave(Group? group) async {
+    if (_isLeaving) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('グループから脱退しますか？'),
+        content: Text(
+          group == null
+              ? 'このグループの投稿は閲覧できなくなります。'
+              : '「${group.name}」の投稿は閲覧できなくなります。',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('キャンセル'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            child: const Text('脱退する'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _isLeaving = true);
+    try {
+      await ref.read(groupServiceProvider).leaveGroup(widget.groupId);
+      ref.invalidate(myGroupsProvider);
+      if (!mounted) return;
+      final messenger = ScaffoldMessenger.of(context);
+      context.go('/home');
+      messenger.showSnackBar(const SnackBar(content: Text('グループから脱退しました')));
+    } on Exception catch (error) {
+      if (!mounted) return;
+      setState(() => _isLeaving = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('脱退に失敗しました: $error')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final groupAsync = ref.watch(groupProvider(widget.groupId));
@@ -107,6 +156,22 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         actions: [
+          TextButton(
+            onPressed: groupAsync.value == null || _isLeaving
+                ? null
+                : () => _confirmAndLeave(groupAsync.value),
+            child: _isLeaving
+                ? const SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Text(
+                    '脱退',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+          ),
           IconButton(
             icon: const Icon(Icons.info_outline),
             tooltip: 'グループ情報',
