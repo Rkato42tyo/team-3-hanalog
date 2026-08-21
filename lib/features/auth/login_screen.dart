@@ -70,98 +70,153 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     ref.listen(authControllerProvider, (prev, next) {
       if (next.hasError) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(authErrorMessage(next.error!))),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(authErrorMessage(next.error!))));
       }
     });
 
     return Scaffold(
-      appBar: AppBar(title: Text(_isSignUp ? '新規登録' : 'ログイン')),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 400),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const _LoginHeader(),
-                  const SizedBox(height: 32),
-                  TextFormField(
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: const InputDecoration(
-                      labelText: 'メールアドレス',
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (v) => (v == null || !v.contains('@'))
-                        ? 'メールアドレスを入力してください'
-                        : null,
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _passwordController,
-                    obscureText: _obscurePassword,
-                    decoration: InputDecoration(
-                      labelText: 'パスワード',
-                      helperText: '6文字以上',
-                      border: const OutlineInputBorder(),
-                      suffixIcon: IconButton(
-                        icon: Icon(_obscurePassword
-                            ? Icons.visibility_off
-                            : Icons.visibility),
-                        tooltip: _obscurePassword ? '表示' : '非表示',
-                        onPressed: () => setState(
-                            () => _obscurePassword = !_obscurePassword),
-                      ),
-                    ),
-                    validator: (v) => (v == null || v.length < 6)
-                        ? 'パスワードは6文字以上で入力してください'
-                        : null,
-                  ),
-                  // 新規登録時のみ、入力ミス防止のためパスワード確認欄を表示。
-                  if (_isSignUp) ...[
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _confirmController,
-                      obscureText: _obscurePassword,
-                      decoration: const InputDecoration(
-                        labelText: 'パスワード（確認）',
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (v) => (v != _passwordController.text)
-                          ? 'パスワードが一致しません'
-                          : null,
-                    ),
-                  ],
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: isLoading ? null : _submit,
-                      child: isLoading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : Text(_isSignUp ? '新規登録' : 'ログイン'),
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: isLoading ? null : _toggleMode,
-                    child: Text(
-                      _isSignUp ? 'アカウントをお持ちの方はログイン' : 'アカウントが無い方は新規登録',
-                    ),
-                  ),
-                ],
+      backgroundColor: const Color(0xFFFFF6E1),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // 背景色の1つ手前にイラストを置き、フォームはその上に重ねる。
+          IgnorePointer(
+            child: Opacity(
+              opacity: 0.32,
+              child: Image.asset(
+                'assets/images/login_illustration.png',
+                fit: BoxFit.cover,
+                alignment: Alignment.topCenter,
+                excludeFromSemantics: true,
               ),
             ),
           ),
-        ),
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0x33FFFFFF), Color(0xCCFFF6E1)],
+              ),
+            ),
+          ),
+          SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 400),
+                  child: Card(
+                    elevation: 8,
+                    shadowColor: const Color(0x33000000),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surface.withValues(alpha: 0.94),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const _LoginHeader(),
+                            const SizedBox(height: 20),
+                            Text(
+                              _isSignUp ? '新規登録' : 'ログイン',
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(fontWeight: FontWeight.w700),
+                            ),
+                            const SizedBox(height: 20),
+                            TextFormField(
+                              controller: _emailController,
+                              keyboardType: TextInputType.emailAddress,
+                              decoration: const InputDecoration(
+                                labelText: 'メールアドレス',
+                                border: OutlineInputBorder(),
+                              ),
+                              validator: (v) => (v == null || !v.contains('@'))
+                                  ? 'メールアドレスを入力してください'
+                                  : null,
+                            ),
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: _passwordController,
+                              obscureText: _obscurePassword,
+                              decoration: InputDecoration(
+                                labelText: 'パスワード',
+                                helperText: '6文字以上',
+                                border: const OutlineInputBorder(),
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _obscurePassword
+                                        ? Icons.visibility_off
+                                        : Icons.visibility,
+                                  ),
+                                  tooltip: _obscurePassword ? '表示' : '非表示',
+                                  onPressed: () => setState(
+                                    () => _obscurePassword = !_obscurePassword,
+                                  ),
+                                ),
+                              ),
+                              validator: (v) => (v == null || v.length < 6)
+                                  ? 'パスワードは6文字以上で入力してください'
+                                  : null,
+                            ),
+                            // 新規登録時のみ、入力ミス防止のためパスワード確認欄を表示。
+                            if (_isSignUp) ...[
+                              const SizedBox(height: 16),
+                              TextFormField(
+                                controller: _confirmController,
+                                obscureText: _obscurePassword,
+                                decoration: const InputDecoration(
+                                  labelText: 'パスワード（確認）',
+                                  border: OutlineInputBorder(),
+                                ),
+                                validator: (v) =>
+                                    (v != _passwordController.text)
+                                    ? 'パスワードが一致しません'
+                                    : null,
+                              ),
+                            ],
+                            const SizedBox(height: 24),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                onPressed: isLoading ? null : _submit,
+                                child: isLoading
+                                    ? const SizedBox(
+                                        height: 20,
+                                        width: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : Text(_isSignUp ? '新規登録' : 'ログイン'),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: isLoading ? null : _toggleMode,
+                              child: Text(
+                                _isSignUp
+                                    ? 'アカウントをお持ちの方はログイン'
+                                    : 'アカウントが無い方は新規登録',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -183,7 +238,7 @@ class _LoginHeader extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         Text(
-          'Hanalog',
+          'kmuramatlog',
           style: theme.textTheme.headlineMedium?.copyWith(
             fontWeight: FontWeight.bold,
           ),
@@ -191,8 +246,9 @@ class _LoginHeader extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           'グループで動画を共有しよう',
-          style: theme.textTheme.bodyMedium
-              ?.copyWith(color: theme.colorScheme.outline),
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.outline,
+          ),
         ),
       ],
     );
